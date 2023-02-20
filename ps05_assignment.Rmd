@@ -21,7 +21,7 @@ sample_n(g,5)
 ```
 
 
-Yes, it look ok.
+#### Yes, it look ok.
 
 
 # 2.Descriptive statistics (15pt)
@@ -89,7 +89,7 @@ a <- g %>%
 a
 ```
 
-years with most missing data: 
+#### years with most missing data: 
 
 ```{r}
 a$time[a$total == max(a$total)]
@@ -113,7 +113,7 @@ ggplot(aes(time, co2, col=factor(iso3))) +
 ```
 
 
-This chart tells me that Canada's CO2 emissions are the most stable, much fewer than others'; both Russia and China have fallen after some growth, but China's emissions are still at a high level; India's emissions are steadily rising; and the U.S. emissions are less stable overall, but also show some growth followed by a decline.
+#### This chart tells me that Canada's CO2 emissions are the most stable, much fewer than others'; both Russia and China have fallen after some growth, but China's emissions are still at a high level; India's emissions are steadily rising; and the U.S. emissions are less stable overall, but also show some growth followed by a decline.
 
 
 
@@ -133,7 +133,7 @@ ggplot(aes(time, co2_PC, col=factor(iso3))) +
 ```
 
 
-This chart tells me that India's per capita CO2 emissions are very stable and consistently lower than the other four countries; Canada, the U.S., and Russia's per capita carbon emissions all start out with very significant increases and then flow back down, with Russia falling back the most, similar emission level as the 1960s; and China's per capita carbon emissions increase later than those three countries and also are much lower than theirs.
+#### This chart tells me that India's per capita CO2 emissions are very stable and consistently lower than the other four countries; Canada, the U.S., and Russia's per capita carbon emissions all start out with very significant increases and then flow back down, with Russia falling back the most, similar emission level as the 1960s; and China's per capita carbon emissions increase later than those three countries and also are much lower than theirs.
 
 
 
@@ -146,7 +146,7 @@ g %>%
   summarise(n = mean(co2_PC))
 
 ```
-From here I can see that overall per capita CO2 emissions have increased from 1960 to 2016 on all continents except the Americas; Asia has increased the most and Africa the least; in 1960 the most was in the Americas and the least was in Africa; in 2016 the most was in Europe and the least was still in Africa.
+#### From here I can see that overall per capita CO2 emissions have increased from 1960 to 2016 on all continents except the Americas; Asia has increased the most and Africa the least; in 1960 the most was in the Americas and the least was in Africa; in 2016 the most was in Europe and the least was still in Africa.
 
 
 
@@ -170,7 +170,7 @@ ggplot(aes(x = region, y = avg_co2pc, fill=as.factor(time))) +
   
 ## 6.
   
-Because 2019 data is missing, I'll take 2016.
+#### Because 2019 data is missing, I'll take 2016.
 ```{r}
 g %>%
   filter(!is.na(co2_PC), region != "") %>%
@@ -202,7 +202,7 @@ ggplot(aes(GDP_PC, lifeExpectancy, col=factor(region))) +
 ```
 
 
-In this graph, we can see that in 1960, Europe had the longest GDP per capita and life expectancy; while Africa had both lower; it can be seen that GDP per capita and life expectancy show a certain positive relationship.
+#### In this graph, we can see that in 1960, Europe had the longest GDP per capita and life expectancy; while Africa had both lower; it can be seen that GDP per capita and life expectancy show a certain positive relationship.
 
 
 
@@ -223,7 +223,7 @@ ggplot(aes(GDP_PC, lifeExpectancy, col=factor(region))) +
 
 ## 3.
 
-GDP per capita has grown substantially, from a predominant distribution of 0 to 20,000 in 1960 to 0 to 90,000 in 2019; people are living relatively longer; what's similar is that  Europe still has the highest GDP per capita and life expectancy, and Africa is still relatively low. Overall, the world has developed a lot over the past six decades.
+#### GDP per capita has grown substantially, from a predominant distribution of 0 to 20,000 in 1960 to 0 to 90,000 in 2019; people are living relatively longer; what's similar is that  Europe still has the highest GDP per capita and life expectancy, and Africa is still relatively low. Overall, the world has developed a lot over the past six decades.
 
 
 
@@ -241,25 +241,70 @@ g %>%
 ```
 
 
-Yes, it fit with what I see on the figures.
+#### Yes, it fit with what I see on the figures.
 
 
 
 
 ## 5.
 
+
+#### This question is a little confusing. I did a few answers for different understanding.
+
+
+#### (1)
+#### In discord, I saw someone said, "I checked with a TA and she said to only use data from 1960 and 2019, and I grouped by region and time. So u can filter for time == 1960 and 2019". 
+#### In this case, for this one, I compute the average LE in 1960 and 2019 across the continents. Since there is no data before 1960, the growth in 1960 is just NA.
+#### Here, the "growth" means the total growth from 1960 to 2019, not every year.
 ```{r}
-g %>% 
+m <- g %>% 
   filter(time == 1960 | time == 2019) %>% 
   filter(!is.na(region), !is.na(lifeExpectancy), region != "") %>% 
   group_by(region, time) %>% 
   summarise(avgLE = mean(lifeExpectancy), .groups = "drop") %>% 
+  group_by(region) %>% 
+  mutate(prev = lag(avgLE), growth = avgLE - prev ) %>% 
+  arrange(growth) 
+m
+```
+
+
+
+#### (2)
+#### This one is the growth of average LE each year from 1960-2019, showed by the order of the growth.
+```{r}
+l <- g %>% 
+  filter(!is.na(region), !is.na(lifeExpectancy), region != "") %>% 
+  group_by(region, time) %>% 
+  summarise(avgLE = mean(lifeExpectancy), .groups = "drop") %>% 
+  group_by(region) %>% 
   mutate(prev = lag(avgLE), growth = avgLE - prev ) %>% 
   filter(!is.na(prev)) %>% 
+  group_by(region) %>% 
   arrange(growth)
-  
+l
 
 ```
+
+
+
+#### (3)
+#### This one is the average annual LE growth through 1960-2019.
+```{r}
+i <- l %>% 
+  select(region, growth) %>% 
+  group_by(region) %>% 
+  summarise(avgGrowth = sum(growth)/(2019-1960)) %>% 
+  arrange(avgGrowth)
+
+i
+```
+#### I hope there's something here that you want. 
+#### In conclusion, we can see that the total increase in life expectancy is the highest in Asia and the lowest in Europe, same as what the average anuual one shows; also, to some extent, the increase might be easier when life expectancy is lower.
+
+
+
+
 
 
 
