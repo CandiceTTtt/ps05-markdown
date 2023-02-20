@@ -1,0 +1,324 @@
+---
+title: "ps05_md_basicplots"
+author: "Candice"
+date: "2023-02-17"
+output: html_document
+---
+```{r, echo=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(tidyverse)
+```
+
+
+# 1.Load and check data (5pt)
+
+```{r}
+g <- read.delim("gapminder.csv")
+dim(g)
+sample_n(g,5)
+```
+
+
+Yes, it look ok.
+
+
+# 2.Descriptive statistics (15pt)
+
+
+## 1.
+```{r}
+length(unique(g$iso3))
+length(unique(g$name))
+length(unique(g$iso2))
+
+```
+
+
+## 2.
+
+
+### (a).
+```{r}
+g %>% 
+  group_by(iso2) %>% 
+  summarise(n = n_distinct(name)) 
+
+unique(g$name[g$iso2 == ""])
+  
+```
+
+### (b).
+```{r}
+
+g %>% 
+  group_by(name) %>% 
+  summarise(n1 = n_distinct(iso3))
+  
+unique(g$iso3[g$name == ""])
+
+```
+
+## 3.
+```{r}
+g %>% 
+  select(time) %>% 
+  filter(!is.na(time)) %>% 
+  min()
+
+g %>% 
+  select(time) %>% 
+  filter(!is.na(time)) %>% 
+  max()
+
+```
+
+
+
+# 3.CO2 emissions (30pt)
+
+
+## 1.
+```{r}
+a <- g %>% 
+  group_by(time) %>% 
+  filter(!is.na(time)) %>% 
+  summarise(n1 = length(is.na(co2)), n2 = length(is.na(co2_PC)), total = n1 +n2)
+
+a
+```
+
+years with most missing data: 
+
+```{r}
+a$time[a$total == max(a$total)]
+
+```
+
+
+## 2.
+```{r}
+g %>% 
+  filter(!is.na(co2)) %>% 
+  filter(iso3 == "USA" | iso3 == "CHN" |
+           iso3 == "IND" | iso3 == "CAN" | iso3 == "RUS") %>% 
+ggplot(aes(time, co2, col=factor(iso3))) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Time (years)", y = "CO2 Emissions",
+       col = "Country")
+  
+
+```
+
+
+This chart tells me that Canada's CO2 emissions are the most stable, much fewer than others'; both Russia and China have fallen after some growth, but China's emissions are still at a high level; India's emissions are steadily rising; and the U.S. emissions are less stable overall, but also show some growth followed by a decline.
+
+
+
+
+## 3.
+```{r}
+g %>% 
+  filter(!is.na(co2_PC)) %>% 
+  filter(iso3 == "USA" | iso3 == "CHN" |
+           iso3 == "IND" | iso3 == "CAN" | iso3 == "RUS") %>% 
+ggplot(aes(time, co2_PC, col=factor(iso3))) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Time (years)", y = "CO2 Emissions per capita",
+       col = "Country")
+
+```
+
+
+This chart tells me that India's per capita CO2 emissions are very stable and consistently lower than the other four countries; Canada, the U.S., and Russia's per capita carbon emissions all start out with very significant increases and then flow back down, with Russia falling back the most, similar emission level as the 1960s; and China's per capita carbon emissions increase later than those three countries and also are much lower than theirs.
+
+
+
+## 4.
+
+```{r}
+g %>% 
+  filter(!is.na(co2_PC)) %>% 
+  group_by(time, region) %>% 
+  summarise(n = mean(co2_PC))
+
+```
+From here I can see that overall per capita CO2 emissions have increased from 1960 to 2016 on all continents except the Americas; Asia has increased the most and Africa the least; in 1960 the most was in the Americas and the least was in Africa; in 2016 the most was in Europe and the least was still in Africa.
+
+
+
+## 5.
+
+```{r}
+g %>% 
+  filter(time == 1960 | time == 2016, !is.na(co2_PC), !is.na(region) ) %>%
+  filter(region != "") %>%
+  group_by(time, region) %>% 
+  summarise(avg_co2pc = mean(co2_PC), .groups = "drop") %>% 
+  
+ggplot(aes(x = region, y = avg_co2pc, fill=as.factor(time))) +
+  geom_col(position = "dodge") +
+  labs(title = "Average co2 Emissions per capita by Year and Continent",
+       x = "Continent", y = "Average co2 Emissions per capita") +
+  scale_fill_discrete(name = "Year")
+
+```
+ 
+  
+## 6.
+  
+Because 2019 data is missing, I'll take 2016.
+```{r}
+g %>%
+  filter(!is.na(co2_PC), region != "") %>%
+  filter(time == "2016") %>%
+  group_by(region, name) %>%
+  summarize(avg_co2_pc = co2_PC, .groups = "drop") %>%
+  arrange(region, avg_co2_pc) %>%
+  select(region, name, avg_co2_pc) %>% 
+  group_by(region) %>% 
+  filter(rank(avg_co2_pc) <4 | rank(desc(avg_co2_pc)) <4)
+
+```
+
+
+
+# 4.GDP per capita (50pt)
+
+
+## 1.
+```{r}
+g %>% 
+  filter(time == 1960) %>% 
+  filter(!is.na(GDP_PC), !is.na(lifeExpectancy)) %>% 
+ggplot(aes(GDP_PC, lifeExpectancy, col=factor(region))) +
+  geom_point() +
+  labs(x = "GDP per capita (1960)", y = "life expectancy (1960)",
+       col = "Continent")
+
+```
+
+
+In this graph, we can see that in 1960, Europe had the longest GDP per capita and life expectancy; while Africa had both lower; it can be seen that GDP per capita and life expectancy show a certain positive relationship.
+
+
+
+
+## 2.
+
+```{r}
+g %>% 
+  filter(time == 2019) %>% 
+  filter(!is.na(GDP_PC), !is.na(lifeExpectancy), !is.na(region), region != "") %>% 
+ggplot(aes(GDP_PC, lifeExpectancy, col=factor(region))) +
+  geom_point() +
+  labs(x = "GDP per capita (2016)", y = "life expectancy (2016)",
+       col = "Continent")
+
+```
+
+
+## 3.
+
+GDP per capita has grown substantially, from a predominant distribution of 0 to 20,000 in 1960 to 0 to 90,000 in 2019; people are living relatively longer; what's similar is that  Europe still has the highest GDP per capita and life expectancy, and Africa is still relatively low. Overall, the world has developed a lot over the past six decades.
+
+
+
+
+
+## 4.
+
+```{r}
+g %>% 
+  filter(!is.na(lifeExpectancy), region != "") %>% 
+  group_by(region, time) %>%
+  filter(time == 1960 | time == 2019) %>% 
+  summarise(n = mean(lifeExpectancy))
+
+```
+
+
+Yes, it fit with what I see on the figures.
+
+
+
+
+## 5.
+
+```{r}
+g %>% 
+  filter(time == 1960 | time == 2019) %>% 
+  filter(!is.na(region), !is.na(lifeExpectancy), region != "") %>% 
+  group_by(region, time) %>% 
+  summarise(avgLE = mean(lifeExpectancy), .groups = "drop") %>% 
+  mutate(prev = lag(avgLE), growth = avgLE - prev ) %>% 
+  filter(!is.na(prev)) %>% 
+  arrange(growth)
+  
+
+```
+
+
+
+## 6.
+
+```{r}
+g %>% 
+  filter(time == 1960 | time == 2019, !is.na(GDP_PC)) %>% 
+  ggplot(aes(x = GDP_PC, fill=factor(time))) +
+  geom_histogram(alpha = 0.5, position = "dodge", bins = 30) +
+  labs(title = "GDP per capita for years of 1960 and 2019",
+       x = "Year", y = "GDP per capita") +
+  scale_fill_discrete(name = "Year")
+
+```
+
+
+
+
+## 7.
+
+```{r}
+g %>% 
+  select(name, time, lifeExpectancy) %>% 
+  filter(name !="", !is.na(time), !is.na(lifeExpectancy)) %>% 
+  filter(time == 1960) %>% 
+  mutate(rank = rank(desc(lifeExpectancy))) %>% 
+  filter(name == "United States of America")
+
+g %>% 
+  select(name, time, lifeExpectancy) %>% 
+  filter(name !="", !is.na(time), !is.na(lifeExpectancy)) %>% 
+  filter(time == 2019) %>% 
+  mutate(rank = rank(desc(lifeExpectancy))) %>% 
+  filter(name == "United States of America")
+
+```
+
+
+
+
+## 8.
+
+```{r}
+
+g %>% 
+  select(name, time, lifeExpectancy) %>% 
+  filter(name !="", !is.na(time), !is.na(lifeExpectancy)) %>% 
+  group_by(time) %>% 
+  mutate(rank = rank(desc(lifeExpectancy)), num = length(name)) %>% 
+  filter(name == "United States of America") %>% 
+  mutate(r = rank/num) %>% 
+  select(time, r)
+  
+```
+
+
+
+
+
+## I spent about 8 hours on this PS.
+
